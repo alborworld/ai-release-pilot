@@ -59,13 +59,14 @@ sequenceDiagram
     participant CI as CI Pipeline (GitHub Actions)
     participant Pilot as pr-catalyst-ai
     participant LLM as AI Model (e.g., OpenAI)
-    participant Platform as GitHub/GitLab API
-    participant ReleaseTool as Semantic Release Tool
+    participant Platform as GitHub API
+    participant Agent as qodo-ai/pr-agent
+    participant Auto as intuit/auto
 
-    Dev->>Git: Push commits to feature-branch
+    Dev->>Git: Push to feature-branch
     Git->>CI: Trigger pipeline on push
     CI->>Pilot: Execute pr-catalyst-ai job
-    Pilot->>Git: Get commits & diff (since main)
+    Pilot->>Git: Get commits & diff
     Pilot->>Pilot: Analyze Commits (Conventional?)
     opt Use Conventional Commits
       Pilot->>Pilot: Determine Label (major/minor/patch) from CC
@@ -75,15 +76,15 @@ sequenceDiagram
     end
 
     opt AI Call Needed (for Label/Title/Desc based on config & prior steps)
-        Pilot->>LLM: Send commits+diff, request needed info (Title, Desc, Label?)
-        LLM-->>Pilot: Return generated content & label (if requested)
+        Pilot->>LLM: Send commits+diff, request needed info
+        LLM-->>Pilot: Return generated content & label
     end
 
     Pilot->>Platform: Check for existing PR for branch
     alt PR Exists
-        Note over Pilot, Platform: Check conditions: update needed? (trigger type)\nwas description manually edited? (checksum check)
+        Note over Pilot, Platform: Check conditions: update needed? (trigger type)\nwas description manually edited?
         alt Update Action (e.g., Manual Trigger OR Auto-Trigger & Not Edited)
-            Pilot->>Platform: Update PR Title, Description, Label (Overwrite if Manual Trigger)
+            Pilot->>Platform: Update PR Title, Description, Label
         else Skip/Comment Action (e.g., Auto-Trigger & Edited)
              Pilot-->>CI: Skip description update (or post comment)
         end
@@ -92,13 +93,15 @@ sequenceDiagram
     end
     CI-->>Dev: Pipeline complete (Draft PR ready)
 
-    Note right of Dev: Reviews PR, edits if needed,\nmarks "Ready for Review"
+    Note over Dev: PR is created/updated
+    Note over Agent: qodo-ai/pr-agent can now review the PR
+    Note over Dev: Reviews PR, edits if needed,\nmarks "Ready for Review"
     Dev->>Platform: Approve & Merge PR into main
 
-    Platform->>ReleaseTool: Trigger release pipeline on merge to main
-    ReleaseTool->>Platform: Read SemVer label from merged PR
-    ReleaseTool->>Git: Bump version, update Changelog, create tag
-    ReleaseTool->>Platform: Create GitHub/GitLab Release
+    Platform->>Auto: Trigger release pipeline on merge to main
+    Auto->>Platform: Read SemVer label from merged PR
+    Auto->>Git: Bump version, update Changelog, create tag
+    Auto->>Platform: Create GitHub Release
 ```
 
 ## 🚀 Getting Started (GitHub Actions)
@@ -173,10 +176,12 @@ jobs:
     git push origin feat/add-user-profile
     ```
 2. **Automatic Draft PR:** The GitHub Action will trigger. pr-catalyst-ai analyzes the changes and creates (or updates) a draft Pull Request, populating the title, description, and SemVer label based on your configuration.
-3. **Review & Refine:** Check the draft PR. Edit the title, description, or label as needed. The AI provides a starting point, but your review is crucial, especially for the SemVer label!
+3. **Review & Refine:** Check the draft PR. Edit the title, description, or label as needed. The AI provides a starting point, but your review is crucial, especially for the SemVer label! You can optionally use [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) to automatically review the PR.
 4. **Mark Ready:** When satisfied, mark the PR as "Ready for Review". (Depending on your configuration, this might trigger another AI update if manual edits weren't made).
 5. **Merge:** Follow your normal code review and approval process, then merge the PR into your base branch (main, develop, etc.).
-6. **Automated Release:** Your separate semantic release tool (e.g., semantic-release) triggers on the merge, reads the SemVer label applied by pr-catalyst-ai (and confirmed by you!), bumps the version, updates the changelog, tags the release, and creates a GitHub/GitLab Release.
+6. **Automated Release:** Your separate semantic release tool (e.g., [intuit/auto](https://github.com/intuit/auto)) triggers on the merge, reads the SemVer label applied by `pr-catalyst-ai` (and confirmed by you!), bumps the version, updates the changelog, tags the release, and creates a GitHub/GitLab Release.
+
+For a detailed visualization of this workflow, see the sequence diagram in the [How It Works](#-how-it-works) section above.
 
 ### 🔧 Configuration
 
@@ -212,101 +217,6 @@ llm_model: 'gpt-3.5-turbo'
 - Simplified configuration options
 - Clear update strategy options
 - Focused on essential settings
-
-5. **Usage Examples**
-```markdown
-### 💡 Usage
-
-1. **Push Code**: Create a feature branch and push your commits:
-    ```bash
-    git checkout -b feat/add-user-profile
-    git commit -m "feat(auth): add user profile management"
-    git push
-    ```
-
-2. **Automatic Draft PR:** The GitHub Action will trigger. `pr-catalyst-ai`:
-   - Creates a draft PR
-   - Sets title based on commit
-   - Adds SemVer label (minor in this case)
-   - Handles off to [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) for review
-
-3. **Review & Refine:** 
-   - [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) reviews the PR
-   - Edit the PR if needed
-   - The AI tools work together to maintain PR quality
-
-4. **Merge:** Follow your normal code review process, then merge.
-
-5. **Automated Release:** [intuit/auto](https://github.com/intuit/auto) handles the release based on the SemVer label.
-```
-**Rationale**:
-- Clear workflow examples
-- Shows integration with other tools
-- Simple, step-by-step instructions
-
-6. **Workflow Diagram**
-```mermaid
-sequenceDiagram
-    participant Dev as Developer
-    participant Git as Git Repository
-    participant CI as CI Pipeline (GitHub Actions)
-    participant Pilot as pr-catalyst-ai
-    participant LLM as AI Model (e.g., OpenAI)
-    participant Platform as GitHub API
-    participant Agent as qodo-ai/pr-agent
-    participant Auto as intuit/auto
-
-    Dev->>Git: Push to feature-branch
-    Git->>CI: Trigger pipeline on push
-    CI->>Pilot: Execute pr-catalyst-ai job
-    Pilot->>Git: Get commits & diff
-    Pilot->>Pilot: Analyze Commits (Conventional?)
-    opt Use Conventional Commits
-      Pilot->>Pilot: Determine Label (major/minor/patch) from CC
-    end
-    opt Use Branch Name Hint (if configured & no CC label)
-      Pilot->>Pilot: Parse branch name for type hint
-    end
-
-    opt AI Call Needed (for Label/Title/Desc based on config & prior steps)
-        Pilot->>LLM: Send commits+diff, request needed info
-        LLM-->>Pilot: Return generated content & label
-    end
-
-    Pilot->>Platform: Check for existing PR for branch
-    alt PR Exists
-        Note over Pilot, Platform: Check conditions: update needed? (trigger type)\nwas description manually edited?
-        alt Update Action (e.g., Manual Trigger OR Auto-Trigger & Not Edited)
-            Pilot->>Platform: Update PR Title, Description, Label
-        else Skip/Comment Action (e.g., Auto-Trigger & Edited)
-             Pilot-->>CI: Skip description update (or post comment)
-        end
-    else PR Doesn't Exist
-        Pilot->>Platform: Create *Draft* PR (Title, Desc, Label)
-    end
-    CI-->>Dev: Pipeline complete (Draft PR ready)
-
-    Note over Dev: PR is created/updated
-    Note over Agent: qodo-ai/pr-agent can now review the PR
-    Note over Dev: Reviews PR, edits if needed,\nmarks "Ready for Review"
-    Dev->>Platform: Approve & Merge PR into main
-
-    Platform->>Auto: Trigger release pipeline on merge to main
-    Auto->>Platform: Read SemVer label from merged PR
-    Auto->>Git: Bump version, update Changelog, create tag
-    Auto->>Platform: Create GitHub Release
-```
-**Rationale**:
-- Shows complete workflow with all tools
-- Clear visualization of update strategies
-- Demonstrates integration points
-
-Would you like me to:
-1. Elaborate on any of these sections?
-2. Show more examples of specific configurations?
-3. Explain the rationale behind any other changes?
-
-(Note: Final configuration options might differ based on implementation details. Check the action's documentation for specifics.)
 
 ### 🙌 Contributing
 
