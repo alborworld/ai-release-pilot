@@ -1,13 +1,13 @@
-# ai-release-pilot
+# pr-catalyst-ai
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/alborworld/ai-release-pilot/ci.yml?branch=main)](https://github.com/alborworld/ai-release-pilot/actions)
-[![License](https://img.shields.io/github/license/alborworld/ai-release-pilot)](LICENSE)
-[![Version](https://img.shields.io/github/v/release/alborworld/ai-release-pilot?include_prereleases)](https://github.com/alborworld/ai-release-pilot/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/alborworld/pr-catalyst-ai/ci.yml?branch=main)](https://github.com/alborworld/pr-catalyst-ai/actions)
+[![License](https://img.shields.io/github/license/alborworld/pr-catalyst-ai)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/alborworld/pr-catalyst-ai?include_prereleases)](https://github.com/alborworld/pr-catalyst-ai/releases)
 <!-- Add other relevant badges: npm version, PyPI version, etc. if applicable -->
 
 **AI-powered assistant to automatically create and manage draft Pull Requests with SemVer labels, designed to work seamlessly with [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) and [intuit/auto](https://github.com/intuit/auto).**
 
-Stop wasting time manually creating PRs and figuring out SemVer bumps. `ai-release-pilot` watches your feature branches and automatically creates draft PRs with appropriate labels, letting you focus on coding while [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) handles PR review and [intuit/auto](https://github.com/intuit/auto) manages releases.
+Stop wasting time manually creating PRs and figuring out SemVer bumps. `pr-catalyst-ai` watches your feature branches and automatically creates draft PRs with appropriate labels, letting you focus on coding while [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) handles PR review and [intuit/auto](https://github.com/intuit/auto) manages releases.
 
 ---
 
@@ -19,7 +19,7 @@ Stop wasting time manually creating PRs and figuring out SemVer bumps. `ai-relea
 
 ## The Solution
 
-`ai-release-pilot` integrates into your CI/CD pipeline to:
+`pr-catalyst-ai` integrates into your CI/CD pipeline to:
 
 1.  **Watch Feature Branches:** Automatically creates draft PRs when you push to a feature branch.
 2.  **Analyze Changes:** Examines commit messages (prioritizing Conventional Commits) and branch names.
@@ -29,7 +29,7 @@ Stop wasting time manually creating PRs and figuring out SemVer bumps. `ai-relea
 6.  **Prepare for Review:** Creates PRs ready for review by [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent).
 7.  **Support Releases:** Ensures PRs have proper SemVer labels for [intuit/auto](https://github.com/intuit/auto) to manage releases.
 
-**`ai-release-pilot` is part of a toolchain.** It creates PRs, [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) reviews them, and [intuit/auto](https://github.com/intuit/auto) handles releases.
+**`pr-catalyst-ai` is part of a toolchain.** It creates PRs, [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) reviews them, and [intuit/auto](https://github.com/intuit/auto) handles releases.
 
 ---
 
@@ -57,14 +57,14 @@ sequenceDiagram
     participant Dev as Developer
     participant Git as Git Repository
     participant CI as CI Pipeline (GitHub Actions)
-    participant Pilot as ai-release-pilot
+    participant Pilot as pr-catalyst-ai
     participant LLM as AI Model (e.g., OpenAI)
     participant Platform as GitHub/GitLab API
     participant ReleaseTool as Semantic Release Tool
 
     Dev->>Git: Push commits to feature-branch
     Git->>CI: Trigger pipeline on push
-    CI->>Pilot: Execute ai-release-pilot job
+    CI->>Pilot: Execute pr-catalyst-ai job
     Pilot->>Git: Get commits & diff (since main)
     Pilot->>Pilot: Analyze Commits (Conventional?)
     opt Use Conventional Commits
@@ -143,7 +143,7 @@ jobs:
           fetch-depth: 0 # Fetch all history for accurate diff/log
 
       - name: Run AI Release Pilot
-        uses: alborworld/ai-release-pilot@v1 # Use the correct version tag
+        uses: alborworld/pr-catalyst-ai@v1 # Use the correct version tag
         with:
           # Required: Your LLM API Key (use GitHub secrets)
           llm_api_key: ${{ secrets.OPENAI_API_KEY }} # Or your specific LLM key secret
@@ -159,10 +159,10 @@ jobs:
 
           # Add other 'with' options here as needed based on action inputs
 ```
-  - Important: Replace `alborworld/ai-release-pilot@v1` with the correct path and version tag for your action once published. Adjust branches-ignore for your workflow.
+  - Important: Replace `alborworld/pr-catalyst-ai@v1` with the correct path and version tag for your action once published. Adjust branches-ignore for your workflow.
 2. Configure Secrets: Add your LLM API key as a repository secret (e.g., OPENAI_API_KEY):
   - Go to your repository > Settings > Secrets and variables > Actions > New repository secret.
-3. (Optional) Add Configuration File: Create a `.ai-release-pilot.yml` file in the root of your repository to customize behavior (see Configuration below).
+3. (Optional) Add Configuration File: Create a `.pr-catalyst-ai.yml` file in the root of your repository to customize behavior (see Configuration below).
 
 ### 💡 Usage
 
@@ -172,15 +172,15 @@ jobs:
     # Make changes, commit code...
     git push origin feat/add-user-profile
     ```
-2. **Automatic Draft PR:** The GitHub Action will trigger. ai-release-pilot analyzes the changes and creates (or updates) a draft Pull Request, populating the title, description, and SemVer label based on your configuration.
+2. **Automatic Draft PR:** The GitHub Action will trigger. pr-catalyst-ai analyzes the changes and creates (or updates) a draft Pull Request, populating the title, description, and SemVer label based on your configuration.
 3. **Review & Refine:** Check the draft PR. Edit the title, description, or label as needed. The AI provides a starting point, but your review is crucial, especially for the SemVer label!
 4. **Mark Ready:** When satisfied, mark the PR as "Ready for Review". (Depending on your configuration, this might trigger another AI update if manual edits weren't made).
 5. **Merge:** Follow your normal code review and approval process, then merge the PR into your base branch (main, develop, etc.).
-6. **Automated Release:** Your separate semantic release tool (e.g., semantic-release) triggers on the merge, reads the SemVer label applied by ai-release-pilot (and confirmed by you!), bumps the version, updates the changelog, tags the release, and creates a GitHub/GitLab Release.
+6. **Automated Release:** Your separate semantic release tool (e.g., semantic-release) triggers on the merge, reads the SemVer label applied by pr-catalyst-ai (and confirmed by you!), bumps the version, updates the changelog, tags the release, and creates a GitHub/GitLab Release.
 
 ### 🔧 Configuration
 
-Customize `ai-release-pilot` behavior via `.ai-release-pilot.yml`:
+Customize `pr-catalyst-ai` behavior via `.pr-catalyst-ai.yml`:
 
 ```yaml
 # --- Update Strategy ---
@@ -224,7 +224,7 @@ llm_model: 'gpt-3.5-turbo'
     git push
     ```
 
-2. **Automatic Draft PR:** The GitHub Action will trigger. `ai-release-pilot`:
+2. **Automatic Draft PR:** The GitHub Action will trigger. `pr-catalyst-ai`:
    - Creates a draft PR
    - Sets title based on commit
    - Adds SemVer label (minor in this case)
@@ -250,7 +250,7 @@ sequenceDiagram
     participant Dev as Developer
     participant Git as Git Repository
     participant CI as CI Pipeline (GitHub Actions)
-    participant Pilot as ai-release-pilot
+    participant Pilot as pr-catalyst-ai
     participant LLM as AI Model (e.g., OpenAI)
     participant Platform as GitHub API
     participant Agent as qodo-ai/pr-agent
@@ -258,7 +258,7 @@ sequenceDiagram
 
     Dev->>Git: Push to feature-branch
     Git->>CI: Trigger pipeline on push
-    CI->>Pilot: Execute ai-release-pilot job
+    CI->>Pilot: Execute pr-catalyst-ai job
     Pilot->>Git: Get commits & diff
     Pilot->>Pilot: Analyze Commits (Conventional?)
     opt Use Conventional Commits
